@@ -1,4 +1,4 @@
-FROM php:8.0-rc-cli
+FROM php:8.0-fpm
 
 # Copy composer.lock and composer.json
 COPY composer.lock composer.json /var/www/
@@ -9,16 +9,16 @@ WORKDIR /var/www
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
-    libonig-dev libpq-dev \
     libpng-dev \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
     locales \
-    libzip-dev \
     zip \
     jpegoptim optipng pngquant gifsicle \
     vim \
     unzip \
+    libzip-dev \
+    libonig-dev \
     git \
     curl
 
@@ -27,7 +27,7 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install extensions
 RUN docker-php-ext-install pdo_mysql mbstring zip exif pcntl
-RUN docker-php-ext-configure gd  --with-freetype=/usr/include/ --with-jpeg=/usr/include/
+RUN docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/
 RUN docker-php-ext-install gd
 
 # Install composer
