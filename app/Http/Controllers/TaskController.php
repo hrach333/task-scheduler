@@ -58,16 +58,21 @@ class TaskController extends Controller
         $this->validate($request, [
             'title' => 'required',
             'description' => 'required',
+            'created' => 'required'
         ]);
 
         $task = new Task();
         $task->title = $request->title;
         $task->description = $request->description;
+        $task->created = $request->created;
+        $now_date =  date('Y-m-d H:i:s');
+
         //если все нормально и запись был сделан удачно то возврошаем true
         if ($this->user->tasks()->save($task))
             return response()->json([
                 'success' => true,
-                'task' => $task
+                'task' => $task,
+                'now_date' => $now_date,
             ]);
         else
             return response()->json([
