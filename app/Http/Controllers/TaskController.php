@@ -55,30 +55,71 @@ class TaskController extends Controller
      */
     public function store(Request $request)
     {
+        /*
         $this->validate($request, [
             'title' => 'required',
             'description' => 'required',
             'created' => 'required'
         ]);
-
+        */
         $task = new Task();
         $task->title = $request->title;
         $task->description = $request->description;
         $task->created = $request->created;
-        $now_date =  date('Y-m-d H:i:s');
+        $new_date = new \DateTime();
+        $this_date = new \DateTime($task->created);
+        $interval = date_diff($new_date, $this_date);
+        if ($new_date >  $this_date) {
+            $text = 'Новая дата больше текушей вам нельзя создвать задачу';
+        } elseif ($new_date < $this_date) {
+            $text = 'Новая дата мень текушей вам можно создвать задачу';
+        }
+
+        if ($interval->d > 7) {
+            $text = 'вы указали дату больше недели';
+        }
+        if ($new_date < $this_date && $interval->d <= 7) {
+            if ($this->user->tasks()->save($task))
+                return response()->json([
+                    'success' => true,
+                    'task' => $task,
+                    'now_date' => $new_date,
+                    'result_if' => $interval,
+                ]);
+            else
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sorry, task could not be added.'
+                ], 500);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Вы указали дату в прошлом или больше недели',
+            ]);
+        }
 
         //если все нормально и запись был сделан удачно то возврошаем true
+        return response()->json([
+            'success' => $interval,
+            'new_date' => $new_date,
+            'this_date' => $this_date,
+            'text' => $text,
+
+        ]);
+        /*
         if ($this->user->tasks()->save($task))
             return response()->json([
                 'success' => true,
                 'task' => $task,
-                'now_date' => $now_date,
+                'now_date' => $new_date,
+                'result_if' => $interval,
             ]);
         else
             return response()->json([
                 'success' => false,
                 'message' => 'Sorry, task could not be added.'
             ], 500);
+        */
     }
 
     /**
