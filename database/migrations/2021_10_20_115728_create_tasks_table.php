@@ -17,7 +17,7 @@ class CreateTasksTable extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->string('title');
-            $table->text('description')->nullable();
+            $table->string('description', 128)->nullable();
             $table->foreign('user_id')
                     ->references('id')
                     ->on('users')

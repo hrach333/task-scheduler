@@ -14,7 +14,8 @@ class UpdateTableTasks extends Migration
     public function up()
     {
         Schema::table('tasks', function (Blueprint $table) {
-            $table->dateTime('created')->nullable();
+            $table->dateTime('created')->nullable()->after('description');
+            $table->string('status', 4)->default('new')->after('created');
         });
     }
 

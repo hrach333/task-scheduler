@@ -24,10 +24,11 @@ class TaskController extends Controller
 
     /**
      * @return mixed
+     * Показывает все записи пользователя
      */
     public function index()
     {
-        $tasks = $this->user->tasks()->get(['title', 'description'])->toArray();
+        $tasks = $this->user->tasks()->get(['title', 'description', 'created', 'status'])->toArray();
 
         return $tasks;
     }
@@ -37,16 +38,35 @@ class TaskController extends Controller
      */
     public function show($id)
     {
+        //Ищем по id задачу
         $task = $this->user->tasks()->find($id);
 
         if (!$task) {
             return response()->json([
                 'success' => false,
-                'message' => 'Sorry, task with id ' . $id . ' cannot be found.'
+                'message' => 'Извините такой ' . $id . ' не найден.'
             ], 400);
         }
 
         return $task;
+    }
+    public function show_date($date1, $date2)
+    {
+        $dt1 = new \DateTime($date1);
+        $dt2 = new \DateTime($date2);
+        if ($dt1 < $dt2) {
+            $task = Task::where([['created', '>=', $date1], ['created', '<=', $date2]])->get();
+            return response()->json([
+                'success' => true,
+                'task' => $task,
+            ]);
+        } else {
+            //
+            return [
+                'success' => false,
+                'message' => 'Не правильный диапозон.'
+            ];
+        }
     }
     /**
      * @param Request $request
@@ -55,13 +75,13 @@ class TaskController extends Controller
      */
     public function store(Request $request)
     {
-        /*
+
         $this->validate($request, [
             'title' => 'required',
             'description' => 'required',
             'created' => 'required'
         ]);
-        */
+
         $task = new Task();
         $task->title = $request->title;
         $task->description = $request->description;
@@ -69,57 +89,39 @@ class TaskController extends Controller
         $new_date = new \DateTime();
         $this_date = new \DateTime($task->created);
         $interval = date_diff($new_date, $this_date);
-        if ($new_date >  $this_date) {
-            $text = 'Новая дата больше текушей вам нельзя создвать задачу';
-        } elseif ($new_date < $this_date) {
-            $text = 'Новая дата мень текушей вам можно создвать задачу';
-        }
+        $date = date('Y-m-d');
+        $date_created = preg_replace("/\s[0-9]{2}:[0-9]{2}:[0-9]{2}/", '', $task->created);
+        $tasks_count = Task::where([['created', 'LIKE', '%' . $date_created . '%'], ['user_id', $this->user->id]])->count();
 
-        if ($interval->d > 7) {
-            $text = 'вы указали дату больше недели';
-        }
+        //проверяем разнизу времени если дата создание меньше или больше недели то не выполняем сохранение
+
         if ($new_date < $this_date && $interval->d <= 7) {
-            if ($this->user->tasks()->save($task))
-                return response()->json([
-                    'success' => true,
-                    'task' => $task,
-                    'now_date' => $new_date,
-                    'result_if' => $interval,
-                ]);
-            else
+            if ($tasks_count <= 4) {
+                if ($this->user->tasks()->save($task)) {
+                    return response()->json([
+                        'success' => true,
+                        'task' => $task,
+                        'count' => $tasks_count,
+                        'user_id' => $this->user->id,
+                    ]);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Запись не возможно добавить.'
+                    ], 500);
+                }
+            } else {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Sorry, task could not be added.'
+                    'message' => 'Задачи превышает 5 записей.'
                 ], 500);
+            }
         } else {
             return response()->json([
                 'success' => false,
                 'message' => 'Вы указали дату в прошлом или больше недели',
-            ]);
-        }
-
-        //если все нормально и запись был сделан удачно то возврошаем true
-        return response()->json([
-            'success' => $interval,
-            'new_date' => $new_date,
-            'this_date' => $this_date,
-            'text' => $text,
-
-        ]);
-        /*
-        if ($this->user->tasks()->save($task))
-            return response()->json([
-                'success' => true,
-                'task' => $task,
-                'now_date' => $new_date,
-                'result_if' => $interval,
-            ]);
-        else
-            return response()->json([
-                'success' => false,
-                'message' => 'Sorry, task could not be added.'
             ], 500);
-        */
+        }
     }
 
     /**
@@ -134,7 +136,7 @@ class TaskController extends Controller
         if (!$task) {
             return response()->json([
                 'success' => false,
-                'message' => 'Sorry, task with id ' . $id . ' cannot be found.'
+                'message' => 'Задача с ' . $id . ' не возможно найти.'
             ], 400);
         }
 
@@ -147,8 +149,25 @@ class TaskController extends Controller
         } else {
             return response()->json([
                 'success' => false,
-                'message' => 'Sorry, task could not be updated.'
+                'message' => 'Запись не возможно обновить'
             ], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        $task = $this->user->tasks()->find($id);
+        if ($task->delete()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Запись удален'
+            ], 200);
+        } else {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Запись не существует или произошло ошибка'
+            ], 400);
         }
     }
 }
