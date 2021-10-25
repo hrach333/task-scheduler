@@ -35,7 +35,7 @@ class APIController extends Controller
         return response()->json([
             'success' => true,
             'token' => $token,
-        ], 201);
+        ]);
     }
 
     /**
@@ -83,6 +83,6 @@ class APIController extends Controller
         return response()->json([
             'success'   =>  true,
             'data'      =>  $user
-        ], 200);
+        ]);
     }
 }
